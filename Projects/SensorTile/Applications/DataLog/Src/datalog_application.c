@@ -32,6 +32,8 @@
 #include "string.h"
 #include "SensorTile.h"
 #include <math.h>
+
+//#include "track.h"
     
 /* FatFs includes component */
 #include "ff_gen_drv.h"
@@ -148,8 +150,8 @@ void RTC_Handler( RTC_HandleTypeDef *RtcHandle )
   
   if(SendOverUSB) /* Write data on the USB */
   {
-    sprintf( dataOut, "\nTimeStamp: %02d:%02d:%02d.%02d", stimestructure.Hours, stimestructure.Minutes, stimestructure.Seconds, subSec );
-    CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+//    sprintf( dataOut, "\n%02d:%02d:%02d.%02d, ", stimestructure.Hours, stimestructure.Minutes, stimestructure.Seconds, subSec );
+//    CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
   }
   else if(SD_Log_Enabled) /* Write data to the file on the SDCard */
   {
@@ -166,22 +168,22 @@ void RTC_Handler( RTC_HandleTypeDef *RtcHandle )
 * @param  handle the device handle
 * @retval None
 */
-void Accelero_Sensor_Handler( void *handle, uint32_t msTick, uint32_t *msTickStateChange, uint8_t *state)
+void Accelero_Sensor_Handler( void *handle, SensorAxes_t *accel/*, uint32_t msTick, uint32_t *msTickStateChange, uint8_t *state, SensorAxes_t *velocity, SensorAxes_t *position*/)
 {
   
   uint8_t who_am_i;
   float odr;
   float fullScale;
-  float r, theta, phi;
-  float x, y, z;
+//  float r, theta, phi;
+//  float x, y, z;
   uint8_t id;
   SensorAxes_t acceleration;
   uint8_t status;
   int32_t d1, d2, d3, d4, d5, d6;
-  const float RADIAN = 57.2957795;
+//  const float RADIAN = 57.2957795;
   
   uint32_t tau = 1000;
-  float x_thresh = 500.0f;
+  float x_thresh = 250.0f;
   float yz_thresh = 100.0f;
 //  float z_thresh = 800.0f;
 
@@ -201,49 +203,79 @@ void Accelero_Sensor_Handler( void *handle, uint32_t msTick, uint32_t *msTickSta
     
     if(SendOverUSB) /* Write data on the USB */
     {
-    	x = acceleration.AXIS_X;
-    	y = acceleration.AXIS_Y;
-    	z = acceleration.AXIS_Z;
+//    	x = acceleration.AXIS_X;
+//    	y = acceleration.AXIS_Y;
+//    	z = acceleration.AXIS_Z;
 
-    	r = sqrt(x*x + y*y + z*z);
-    	theta = acos(z/r)*RADIAN;
-    	phi= atan2(y, x)*RADIAN;
+    	accel->AXIS_X = acceleration.AXIS_X;
+    	accel->AXIS_Y = acceleration.AXIS_Y;
+    	accel->AXIS_Z = acceleration.AXIS_Z;
 
-    	floatToInt(r, &d1, &d2, 3);
-    	floatToInt(theta, &d3, &d4, 3);
-    	floatToInt(phi, &d5, &d6, 3);
-    	sprintf(dataOut, "\n\rr: %d.%03d, theta: %d.%03d, phi: %d.%03d", (int)d1, (int)d2, (int)d3, (int)d4, (int)d5, (int)d6);
-    	CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-    	sprintf( dataOut, "\n\rA_X: %d, A_Y: %d, A_Z: %d, |A|: %d.%03d", (int)acceleration.AXIS_X, (int)acceleration.AXIS_Y, (int)acceleration.AXIS_Z, (int)d1, (int)d2 );
-    	CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+//    	velocity->AXIS_X += x * DATA_PERIOD_MS/1000.0;
+//    	velocity->AXIS_Y += y * DATA_PERIOD_MS/1000.0;
+//    	velocity->AXIS_Z += z * DATA_PERIOD_MS/1000.0;
 
-    	sprintf(dataOut, "\n\rA_z: %d, *state: %d, msTick - *msTickStateChange: %d, tau: %d", (int)acceleration.AXIS_Z, (int)*state, (int)(msTick-*msTickStateChange), (int)tau);
-    	CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+//    	position->AXIS_X += velocity->AXIS_X * DATA_PERIOD_MS/1000.0;
+//		position->AXIS_Y += velocity->AXIS_Y * DATA_PERIOD_MS/1000.0;
+//		position->AXIS_Z += velocity->AXIS_Z * DATA_PERIOD_MS/1000.0;
 
-    	switch (*state) {
-    		case 0:
-    			if (abs(x) > x_thresh) {
-    				*state = 1;
-    				*msTickStateChange = msTick;
-    			}
-    			break;
-    		case 1:
-    			if (abs(y) > yz_thresh || abs(z) > yz_thresh || msTick-*msTickStateChange > tau) {
-    				*state = 0;
-    				*msTickStateChange = msTick;
-    			} else if (abs(x) < 0.05 * x_thresh) {
-    				*state = 2;
-    				*msTickStateChange = msTick;
-    				//LED ON
-    			}
-    			break;
-    		case 2:
-    			if (msTick-*msTickStateChange > tau) {
-    				*state = 0;
-    				*msTickStateChange = msTick;
-    			}
-    			break;
-    	}
+//    	sprintf( dataOut, "\nACC_X: %d, ACC_Y: %d, ACC_Z: %d", (int)acceleration.AXIS_X, (int)acceleration.AXIS_Y, (int)acceleration.AXIS_Z );
+//    	      CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+//    	sprintf( dataOut, "%d,%d,%d,%d,%d,%d,%d,%d,%d", (int)x, (int)y, (int)z, (int)velocity->AXIS_X, (int)velocity->AXIS_Y, (int)velocity->AXIS_Z, (int)position->AXIS_X, (int)position->AXIS_Y, (int)position->AXIS_Z);
+//    	CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+
+//    	r = sqrt(x*x + y*y + z*z);
+//    	theta = acos(z/r)*RADIAN;
+//    	phi= atan2(y, x)*RADIAN;
+//
+//    	floatToInt(r, &d1, &d2, 3);
+//    	floatToInt(theta, &d3, &d4, 3);
+//    	floatToInt(phi, &d5, &d6, 3);
+//    	sprintf(dataOut, "\n\rr: %d.%03d, theta: %d.%03d, phi: %d.%03d", (int)d1, (int)d2, (int)d3, (int)d4, (int)d5, (int)d6);
+//    	CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+//    	sprintf( dataOut, "\n\rA_X: %d, A_Y: %d, A_Z: %d, |A|: %d.%03d", (int)acceleration.AXIS_X, (int)acceleration.AXIS_Y, (int)acceleration.AXIS_Z, (int)d1, (int)d2 );
+//    	CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+//
+//    	sprintf(dataOut, "\n\rA_z: %d, *state: %d, msTick - *msTickStateChange: %d, tau: %d", (int)acceleration.AXIS_Z, (int)*state, (int)(msTick-*msTickStateChange), (int)tau);
+//    	CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+//
+//    	switch (*state) {
+//    		case 0:
+//    			if (abs(x) > x_thresh) {
+//    				if (x < 0)
+//    					*state = 1;
+//    				else if (x > 0)
+//    					*state = 3;
+//    				*msTickStateChange = msTick;
+//    			}
+//    			break;
+//    		case 1:
+//    			if (abs(y) > yz_thresh || abs(z)-1000 > yz_thresh || msTick-*msTickStateChange > tau) {
+//    				*state = 0;
+//    				*msTickStateChange = msTick;
+//    			} else if (x > 0) {
+//    				*state = 2;
+//    				*msTickStateChange = msTick;
+//    				//LED ON
+//    			}
+//    			break;
+//    		case 3:
+//				if (abs(y) > yz_thresh || abs(z)-1000 > yz_thresh || msTick-*msTickStateChange > tau) {
+//					*state = 0;
+//					*msTickStateChange = msTick;
+//				} else if (x < 0) {
+//					*state = 2;
+//					*msTickStateChange = msTick;
+//					//LED ON
+//				}
+//				break;
+//    		case 2:
+//    			if (msTick-*msTickStateChange > tau) {
+//    				*state = 0;
+//    				*msTickStateChange = msTick;
+//    			}
+//    			break;
+//    	}
 
 //    	if (*state == 0 && z < -z_thresh && msTick-*msTickStateChange > tau) {
 //    		*state = 1;
@@ -327,7 +359,7 @@ void Accelero_Sensor_Handler( void *handle, uint32_t msTick, uint32_t *msTickSta
 * @param  handle the device handle
 * @retval None
 */
-void Gyro_Sensor_Handler( void *handle )
+void Gyro_Sensor_Handler( void *handle, SensorAxes_t *gyro/*, SensorAxes_t *prevAngVel, SensorAxes_t *angPosition*/ )
 {
   
   uint8_t who_am_i;
@@ -353,18 +385,38 @@ void Gyro_Sensor_Handler( void *handle )
     
     if(SendOverUSB) /* Write data on the USB */
     {
-	  uint32_t abs_gyr;
-	  abs_gyr = ((int)angular_velocity.AXIS_X * (int)angular_velocity.AXIS_X);
-	  abs_gyr += ((int)angular_velocity.AXIS_Y * (int)angular_velocity.AXIS_Y);
-	  abs_gyr += ((int)angular_velocity.AXIS_Z * (int)angular_velocity.AXIS_Z);
-	  abs_gyr = sqrt((float) abs_gyr);
-      sprintf( dataOut, "\n\rGYR_X: %d, GYR_Y: %d, GYR_Z: %d, |GYR|: %d", (int)angular_velocity.AXIS_X, (int)angular_velocity.AXIS_Y, (int)angular_velocity.AXIS_Z, (int)abs_gyr );
-      CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-      
-      if (abs_gyr > 40000) {
-    	  sprintf( dataOut, "\n\r\t\t\tAngular Velocity Vector Magnitude > 40 degrees/s!");
-    	  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
-      }
+    	gyro->AXIS_X = angular_velocity.AXIS_X;
+    	gyro->AXIS_Y = angular_velocity.AXIS_Y;
+    	gyro->AXIS_Z = angular_velocity.AXIS_Z;
+//	  uint32_t abs_gyr;
+//	  abs_gyr = ((int)angular_velocity.AXIS_X * (int)angular_velocity.AXIS_X);
+//	  abs_gyr += ((int)angular_velocity.AXIS_Y * (int)angular_velocity.AXIS_Y);
+//	  abs_gyr += ((int)angular_velocity.AXIS_Z * (int)angular_velocity.AXIS_Z);
+//	  abs_gyr = sqrt((float) abs_gyr);
+//    	sprintf( dataOut, "\nGYR_X: %d, GYR_Y: %d, GYR_Z: %d", (int)angular_velocity.AXIS_X, (int)angular_velocity.AXIS_Y, (int)angular_velocity.AXIS_Z );
+//    	      CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+//      sprintf( dataOut, "\n\rGYR_X: %d, GYR_Y: %d, GYR_Z: %d, |GYR|: %d", (int)angular_velocity.AXIS_X, (int)angular_velocity.AXIS_Y, (int)angular_velocity.AXIS_Z, (int)abs_gyr );
+//      CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+
+//      if (abs_gyr > 40000) {
+//    	  sprintf( dataOut, "\n\r\t\t\tAngular Velocity Vector Magnitude > 40 degrees/s!");
+//    	  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+//      }
+
+//    	angPosition->AXIS_X += angular_velocity.AXIS_X * DATA_PERIOD_MS/1000.0;
+//    	angPosition->AXIS_Y += angular_velocity.AXIS_Y * DATA_PERIOD_MS/1000.0;
+//    	angPosition->AXIS_Z += angular_velocity.AXIS_Z * DATA_PERIOD_MS/1000.0;
+
+//    	SensorAxes_t angAccel = {0, 0, 0};
+//    	angAccel.AXIS_X = (angular_velocity.AXIS_X - prevAngVel->AXIS_X) / (DATA_PERIOD_MS/1000.0);
+//    	angAccel.AXIS_Y = (angular_velocity.AXIS_Y - prevAngVel->AXIS_Y) / (DATA_PERIOD_MS/1000.0);
+//    	angAccel.AXIS_Z = (angular_velocity.AXIS_Z - prevAngVel->AXIS_Z) / (DATA_PERIOD_MS/1000.0);
+
+//    	prevAngVel->AXIS_X = angular_velocity.AXIS_X;
+
+
+//    	sprintf( dataOut, ", %d,%d,%d,%d,%d,%d,%d,%d,%d", (int)angular_velocity.AXIS_X, (int)angular_velocity.AXIS_Y, (int)angular_velocity.AXIS_Z, (int)angular_velocity.AXIS_X, (int)angular_velocity.AXIS_Y, (int)angular_velocity.AXIS_Z, (int)angular_velocity.AXIS_X, (int)angular_velocity.AXIS_Y, (int)angular_velocity.AXIS_Z);
+//    	CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
 
       if ( verbose == 1 )
       {
@@ -420,7 +472,7 @@ void Gyro_Sensor_Handler( void *handle )
 * @param  handle the device handle
 * @retval None
 */
-void Magneto_Sensor_Handler( void *handle )
+void Magneto_Sensor_Handler( void *handle, SensorAxes_t *mag )
 {
   uint8_t who_am_i;
   float odr;
@@ -445,8 +497,12 @@ void Magneto_Sensor_Handler( void *handle )
     
     if(SendOverUSB) /* Write data on the USB */
     {
-      sprintf( dataOut, "\n\rMAG_X: %d, MAG_Y: %d, MAG_Z: %d", (int)magnetic_field.AXIS_X, (int)magnetic_field.AXIS_Y, (int)magnetic_field.AXIS_Z );
-      CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+    	mag->AXIS_X = magnetic_field.AXIS_X;
+    	mag->AXIS_Y = magnetic_field.AXIS_Y;
+    	mag->AXIS_Z = magnetic_field.AXIS_Z;
+
+//      sprintf( dataOut, "\n\rMAG_X: %d, MAG_Y: %d, MAG_Z: %d", (int)magnetic_field.AXIS_X, (int)magnetic_field.AXIS_Y, (int)magnetic_field.AXIS_Z );
+//      CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
       
       if ( verbose == 1 )
       {

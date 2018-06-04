@@ -101,6 +101,11 @@
 			<locationURI>PARENT-2-PROJECT_LOC/Src/datalog_application.c</locationURI>
 		</link>
 		<link>
+			<name>DataLog/User/helper_3dmath.h</name>
+			<type>1</type>
+			<location>/Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Projects/SensorTile/Applications/DataLog/Src/helper_3dmath.h</location>
+		</link>
+		<link>
 			<name>DataLog/User/main.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Src/main.c</locationURI>
@@ -119,6 +124,11 @@
 			<name>DataLog/User/syscalls.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Src/syscalls.c</locationURI>
+		</link>
+		<link>
+			<name>DataLog/User/track.h</name>
+			<type>1</type>
+			<location>/Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Projects/SensorTile/Applications/DataLog/Src/track.h</location>
 		</link>
 		<link>
 			<name>DataLog/User/usbd_cdc_interface.c</name>

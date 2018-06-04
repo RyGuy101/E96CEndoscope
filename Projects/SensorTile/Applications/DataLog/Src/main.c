@@ -42,6 +42,8 @@
 #include <math.h>   /* trunc */
 #include "main.h"
 
+#include "track.h"
+
 #include "datalog_application.h"
 #include "usbd_cdc_interface.h"
 
@@ -54,13 +56,14 @@
 /* Private define ------------------------------------------------------------*/
 
 /* Data acquisition period [ms] */
-#define DATA_PERIOD_MS (100)
+//#define DATA_PERIOD_MS (25)
+const int DATA_PERIOD_MS = 1;
 //#define NOT_DEBUGGING
 
-#define ACCEL_RANGE 4.0f
+#define ACCEL_RANGE 2.0f
 #define GYRO_RANGE 245.0f
-#define ACCEL_ODR 26.0f
-#define GYRO_ODR 26.0f
+#define ACCEL_ODR 1660.0f
+#define GYRO_ODR 1660.0f
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -83,10 +86,12 @@ static void *LSM6DSM_G_0_handle = NULL;
 static void *LSM303AGR_X_0_handle = NULL;
 static void *LSM303AGR_M_0_handle = NULL;
 static void *LPS22HB_P_0_handle = NULL;
-static void *LPS22HB_T_0_handle = NULL; 
-static void *HTS221_H_0_handle = NULL; 
+static void *LPS22HB_T_0_handle = NULL;
+static void *HTS221_H_0_handle = NULL;
 static void *HTS221_T_0_handle = NULL;
 static void *GG_handle = NULL;
+
+static char dataOut[256];
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -103,10 +108,18 @@ static void initializeAllSensors( void );
   * @param  None
   * @retval None
   */
+enum State {START, MOUTH, THROAT, EPIGLOTTIS, LARYNX, DESTINATION, RIGHT_LUNG, LEFT_LUNG, BAD};
+char* stateStr[] = {"START", "MOUTH", "THROAT", "EPIGLOTTIS", "LARYNX", "DESTINATION", "RIGHT_LUNG", "LEFT_LUNG", "BAD"};
+
 int main( void )
 {
-  uint32_t msTick, msTickPrev = 0, msTickStateChange = 0;
-  uint8_t doubleTap = 0, state = 0;
+  uint32_t msTick, msTickPrev = 0, msTickStateChange = 0, loopTime = 0;
+  uint8_t doubleTap = 0;
+  enum State state = START;
+//  SensorAxes_t linVelocity = {0, 0, 0}, linPosition = {0, 0, 0};
+//  SensorAxes_t prevAngVel = {0, 0, 0}, angPosition = {0, 0, 0};
+  SensorAxes_t accel = {0, 0, 0}, gyro = {0, 0, 0}, mag = {0, 0, 0};
+  VectorFloat pos, angle;
   
   /* STM32L4xx HAL library initialization:
   - Configure the Flash prefetch, instruction and Data caches
@@ -123,7 +136,7 @@ int main( void )
   {
     /* Initialize LED */
     BSP_LED_Init(LED1);
-//    BSP_LED_On(LED1);
+    BSP_LED_On(LED1);
   }
 #ifdef NOT_DEBUGGING     
   else
@@ -172,22 +185,26 @@ int main( void )
   BSP_ACCELERO_Set_ODR_Value(LSM6DSM_X_0_handle, ACCEL_ODR);
   BSP_GYRO_Set_ODR_Value(LSM6DSM_G_0_handle, GYRO_ODR);
   
+  int32_t d1, d2;
+  int count = 0;
+
   while (1)
   {
     /* Get sysTick value and check if it's time to execute the task */
     msTick = HAL_GetTick();
     if(msTick % DATA_PERIOD_MS == 0 && msTickPrev != msTick)
     {
+      loopTime = msTick - msTickPrev;
       msTickPrev = msTick;
       if(SendOverUSB)
       {
-//        BSP_LED_On(LED1);
+        BSP_LED_On(LED1);
       }
-      if (state == 0) {
-    	  BSP_LED_On(LED1);
-      } else if (state == 2) {
-    	  BSP_LED_Off(LED1);
-      }
+//      if (state == 0) {
+//    	  BSP_LED_Off(LED1);
+//      } else if (state == 2) {
+//    	  BSP_LED_On(LED1);
+//      }
 #ifdef NOT_DEBUGGING     
       else if (SD_Log_Enabled) 
       {
@@ -196,21 +213,93 @@ int main( void )
 #endif      
       RTC_Handler( &RtcHandle );
       
-      Accelero_Sensor_Handler( LSM6DSM_X_0_handle, msTick, &msTickStateChange, &state );
+      Accelero_Sensor_Handler( LSM6DSM_X_0_handle, &accel);
       
-      Gyro_Sensor_Handler( LSM6DSM_G_0_handle );
+      Gyro_Sensor_Handler( LSM6DSM_G_0_handle, &gyro );
       
-      Magneto_Sensor_Handler( LSM303AGR_M_0_handle );
+      Magneto_Sensor_Handler( LSM303AGR_M_0_handle, &mag );
       
-      Pressure_Sensor_Handler( LPS22HB_P_0_handle );
+      loop(&accel, &gyro, &mag, &pos, &angle, loopTime);
+
+      if (count == 50) {
+    	  count = 0;
+
+		  uint8_t subSec = 0;
+		  RTC_TimeTypeDef stimestructure;
+		  HAL_RTC_GetTime( &RtcHandle, &stimestructure, FORMAT_BIN );
+		  subSec = (((((( int )RTC_SYNCH_PREDIV) - (( int )stimestructure.SubSeconds)) * 100) / ( RTC_SYNCH_PREDIV + 1 )) & 0xff );
+		  sprintf( dataOut, "\n%02d:%02d:%02d.%02d, ", stimestructure.Hours, stimestructure.Minutes, stimestructure.Seconds, subSec );
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+
+		  sprintf( dataOut, "\nACC_X: %d, ACC_Y: %d, ACC_Z: %d", (int)accel.AXIS_X, (int)accel.AXIS_Y, (int)accel.AXIS_Z );
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+		  sprintf( dataOut, "\nGYR_X: %d, GYR_Y: %d, GYR_Z: %d", (int)gyro.AXIS_X, (int)gyro.AXIS_Y, (int)gyro.AXIS_Z );
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+
+		  angle.x *= 180 / 3.14159265;
+		  angle.y *= 180 / 3.14159265;
+		  angle.z *= 180 / 3.14159265;
+
+		  floatToInt(angle.x, &d1, &d2, 1);
+		  sprintf( dataOut, "\nangle.x: %d.%d", d1, d2 );
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+		  floatToInt(angle.y, &d1, &d2, 1);
+		  sprintf( dataOut, ", angle.y: %d.%d", d1, d2 );
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+		  floatToInt(angle.z, &d1, &d2, 1);
+		  sprintf( dataOut, ", angle.z: %d.%d", d1, d2 );
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+
+		  floatToInt(pos.x, &d1, &d2, 1);
+		  sprintf( dataOut, "\npos.x: %d.%d", d1, d2 );
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+		  floatToInt(pos.y, &d1, &d2, 1);
+		  sprintf( dataOut, ", pos.y: %d.%d", d1, d2 );
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+		  floatToInt(pos.z, &d1, &d2, 1);
+		  sprintf( dataOut, ", pos.z: %d.%d", d1, d2 );
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+
+		  sprintf( dataOut, "\nstate=" );
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+		  sprintf( dataOut, stateStr[state] );
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+
+		  sprintf( dataOut, "\n" );
+		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
+
+		  switch(state) {
+			  case START:
+				  if (angle.x < 75 || abs(angle.y) > 15) {
+					  msTickStateChange = msTick; //keep resetting until correct orientation
+				  } else if (msTick - msTickStateChange > 500) {
+					  state = MOUTH;
+					  resetPos();
+					  msTickStateChange = msTick;
+				  }
+				  break;
+			  case MOUTH:
+				  if (angle.x < 60 || abs(angle.y) > 20) {
+					  msTickStateChange = msTick; //keep resetting until correct orientation
+				  } else if (msTick - msTickStateChange > 500 && accel.AXIS_Y < -100) {
+					  state = THROAT;
+					  msTickStateChange = msTick;
+				  }
+				  break;
+		  }
+      }
+      count++;
+
+
+//      Pressure_Sensor_Handler( LPS22HB_P_0_handle );
       
       if(!no_T_HTS221)
       {
-        Temperature_Sensor_Handler( HTS221_T_0_handle );
+//        Temperature_Sensor_Handler( HTS221_T_0_handle );
       }
       if(!no_H_HTS221)
       {
-        Humidity_Sensor_Handler( HTS221_H_0_handle );
+//        Humidity_Sensor_Handler( HTS221_H_0_handle );
       }
       
       if(!no_GG)
@@ -225,7 +314,7 @@ int main( void )
       
       if(SendOverUSB)
       {
-//        BSP_LED_Off(LED1);
+        BSP_LED_Off(LED1);
       }
 #ifdef NOT_DEBUGGING     
       else if (SD_Log_Enabled) 

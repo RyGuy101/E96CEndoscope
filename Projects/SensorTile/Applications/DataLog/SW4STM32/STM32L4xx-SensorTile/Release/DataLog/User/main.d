@@ -83,6 +83,9 @@ DataLog/User/main.o: \
  /Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  /Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h \
  /Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Projects/SensorTile/Applications/DataLog/Inc/usbd_cdc_interface.h \
+ /Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Projects/SensorTile/Applications/DataLog/Src/track.h \
+ /Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Projects/SensorTile/Applications/DataLog/Src/helper_3dmath.h \
+ /Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Drivers/BSP/Components/Common/sensor.h \
  /Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Projects/SensorTile/Applications/DataLog/Inc/datalog_application.h \
  /Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Projects/SensorTile/Applications/DataLog/Inc/usbd_cdc_interface.h \
  /Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Middlewares/Third_Party/FatFs/src/ff_gen_drv.h \
@@ -258,6 +261,12 @@ DataLog/User/main.o: \
 /Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h:
 
 /Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Projects/SensorTile/Applications/DataLog/Inc/usbd_cdc_interface.h:
+
+/Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Projects/SensorTile/Applications/DataLog/Src/track.h:
+
+/Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Projects/SensorTile/Applications/DataLog/Src/helper_3dmath.h:
+
+/Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Drivers/BSP/Components/Common/sensor.h:
 
 /Users/ryannemiroff/Documents/workspaceE96/v1.2.0/Projects/SensorTile/Applications/DataLog/Inc/datalog_application.h:
 
