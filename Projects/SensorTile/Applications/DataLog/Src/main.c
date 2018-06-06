@@ -268,6 +268,10 @@ int main( void )
 		  sprintf( dataOut, "\n" );
 		  CDC_Fill_Buffer(( uint8_t * )dataOut, strlen( dataOut ));
 
+		  if (angle.x < -75) {
+			  state = START;
+		  }
+
 		  switch(state) {
 			  case START:
 				  if (angle.x < 75 || abs(angle.y) > 15) {
@@ -279,6 +283,22 @@ int main( void )
 				  }
 				  break;
 			  case MOUTH:
+				  if (angle.x < 60 || abs(angle.y) > 20) {
+					  msTickStateChange = msTick; //keep resetting until correct orientation
+				  } else if (msTick - msTickStateChange > 500 && accel.AXIS_Y < -100) {
+					  state = THROAT;
+					  msTickStateChange = msTick;
+				  }
+				  break;
+			  case THROAT:
+				  if (angle.x > 15) {
+					  msTickStateChange = msTick; //keep resetting until correct orientation
+				  } else if (msTick - msTickStateChange > 500 && accel.AXIS_Y < -100) {
+					  state = THROAT;
+					  msTickStateChange = msTick;
+				  }
+				  break;
+			  case EPIGLOTTIS:
 				  if (angle.x < 60 || abs(angle.y) > 20) {
 					  msTickStateChange = msTick; //keep resetting until correct orientation
 				  } else if (msTick - msTickStateChange > 500 && accel.AXIS_Y < -100) {

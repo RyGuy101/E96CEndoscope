@@ -136,9 +136,13 @@ void loop(SensorAxes_t* accel, SensorAxes_t* gyro, SensorAxes_t* mag, VectorFloa
 	  aaFilteredF.y -= gravity.y;
 	  aaFilteredF.z -= gravity.z;
 
-	  aaRealF = projectToGlobal(&aaFilteredF, &angle);
-	  aaRealF.x = aaRealF.x * cos(angle.z) - aaRealF.y * sin(angle.z);
-	  aaRealF.y = aaRealF.x * sin(angle.z) + aaRealF.y * cos(angle.z);
+//	  aaRealF = projectToGlobal(&aaFilteredF, &angle);
+//	  aaRealF.x = aaRealF.x * cos(angle.z) - aaRealF.y * sin(angle.z);
+//	  aaRealF.y = aaRealF.x * sin(angle.z) + aaRealF.y * cos(angle.z);
+
+	  aaRealF.x = 0;
+	  aaRealF.y = aaFilteredF.y;
+	  aaRealF.z = 0;
 
 	  vel.x += aaRealF.x * dT;
 	  vel.y += aaRealF.y * dT;
